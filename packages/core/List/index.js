@@ -126,7 +126,6 @@ module.exports = class List {
     const fieldTypes = this.fields
       .map(i => i.getGraphqlTypes())
       .filter(i => i)
-      .join('\n      ');
     const updateArgs = this.fields
       .map(i => i.getGraphqlUpdateArgs())
       .filter(i => i)
@@ -139,18 +138,25 @@ module.exports = class List {
       .map(i => i.split(/\n\s+/g).join('\n        '))
       .join('\n        ')
       .trim();
-    return `
+    return [
+      `
       type ${this.key} {
         id: String
         ${fieldSchemas}
       }
+      `,
+      `
       input ${this.key}UpdateInput {
         ${updateArgs}
       }
+      `,
+      `
       input ${this.key}CreateInput {
         ${createArgs}
       }
-      ${fieldTypes}`;
+      `,
+      ...fieldTypes
+    ];
   }
   getAdminGraphqlQueries() {
     const queryArgs = this.fields
