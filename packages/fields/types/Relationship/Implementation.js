@@ -30,7 +30,7 @@ module.exports = class Select extends Implementation {
       ${this.path}_not_in: [String!]
     `;
   }
-  getGraphqlResolvers() {
+  getGraphqlFieldResolvers() {
     const { many, ref } = this.config;
     return {
       [this.path]: item => {

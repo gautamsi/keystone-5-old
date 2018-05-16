@@ -124,8 +124,8 @@ module.exports = class List {
       .map(i => i.getGraphqlSchema())
       .join('\n        ');
     const fieldTypes = this.fields
-      .map(i => i.getGraphqlTypes())
-      .filter(i => i)
+      .map(i => i.getGraphqlAuxiliaryTypes())
+      .filter(i => i);
     const updateArgs = this.fields
       .map(i => i.getGraphqlUpdateArgs())
       .filter(i => i)
@@ -172,7 +172,8 @@ module.exports = class List {
           first: Int
           skip: Int`;
     // TODO: Group field filters under filter: FilterInput
-    return `
+    return [
+      `
         ${this.listQueryName}(${commonArgs}
 
           # Field Filters
@@ -185,7 +186,12 @@ module.exports = class List {
 
           # Field Filters
           ${queryArgs}
-        ): _QueryMeta`;
+        ): _QueryMeta
+      `,
+      ...this.fields
+        .map(field => field.getGraphqlAuxiliaryQueries())
+        .filter(Boolean),
+    ];
   }
   getAdminQueryResolvers() {
     return {
@@ -196,15 +202,34 @@ module.exports = class List {
   }
   getAdminFieldResolvers() {
     const fieldResolvers = this.fields.reduce(
-      (resolvers, field) => ({ ...resolvers, ...field.getGraphqlResolvers() }),
+      (resolvers, field) => ({ ...resolvers, ...field.getGraphqlFieldResolvers() }),
       {}
     );
     return Object.keys(fieldResolvers).length
       ? { [this.key]: fieldResolvers }
       : {};
   }
+  getAuxiliaryTypeResolvers() {
+    return this.fields.reduce(
+      (resolvers, field) => ({ ...resolvers, ...field.getGraphqlAuxiliaryTypeResolvers() }),
+      {}
+    );
+  }
+  getAuxiliaryQueryResolvers() {
+    return this.fields.reduce(
+      (resolvers, field) => ({ ...resolvers, ...field.getGraphqlAuxiliaryQueryResolvers() }),
+      {}
+    );
+  }
+  getAuxiliaryMutationResolvers() {
+    return this.fields.reduce(
+      (resolvers, field) => ({ ...resolvers, ...field.getGraphqlAuxiliaryMutationResolvers() }),
+      {}
+    );
+  }
   getAdminGraphqlMutations() {
-    return `
+    return [
+      `
         ${this.createMutationName}(
           data: ${this.key}UpdateInput
         ): ${this.key}
@@ -217,7 +242,12 @@ module.exports = class List {
         ): ${this.key}
         ${this.deleteManyMutationName}(
           ids: [String!]
-        ): ${this.key}`;
+        ): ${this.key}
+      `,
+      ...this.fields
+        .map(field => field.getGraphqlAuxiliaryMutations())
+        .filter(Boolean),
+    ];
   }
   getAdminMutationResolvers() {
     return {
