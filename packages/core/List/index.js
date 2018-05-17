@@ -73,7 +73,7 @@ module.exports = class List {
     });
 
     const schema = new mongoose.Schema({}, this.config.mongooseSchemaOptions);
-    this.fields.forEach(i => i.addToMongooseSchema(schema));
+    this.fields.forEach(i => i.addToMongooseSchema(schema, mongoose));
 
     if (this.config.configureMongooseSchema) {
       this.config.configureMongooseSchema(schema, { mongoose });
