@@ -1,4 +1,3 @@
-/* global KEYSTONE_ADMIN_META */
 import { ApolloLink, Observable } from 'apollo-link';
 import { createUploadLink } from 'apollo-upload-client';
 import { withClientState } from 'apollo-link-state';
@@ -7,7 +6,7 @@ import { onError } from 'apollo-link-error';
 import { InMemoryCache } from 'apollo-cache-inmemory';
 import ApolloClient from 'apollo-client';
 
-const { apiPath } = KEYSTONE_ADMIN_META;
+const { apiPath } = process.env.KEYSTONE_ADMIN_META;
 
 // Ejected from apollo-boost v0.1.4:
 // https://github.com/apollographql/apollo-client/tree/4e2b2b90b181d9c1927a721de4e26e4ed3c86637/packages/apollo-boost

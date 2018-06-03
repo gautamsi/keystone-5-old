@@ -4,10 +4,29 @@ const express = require('express');
 const session = require('express-session');
 const webpack = require('webpack');
 const { apolloUploadExpress } = require('apollo-upload-server');
-const webpackDevMiddleware = require('webpack-dev-middleware');
 const { graphqlExpress, graphiqlExpress } = require('apollo-server-express');
+const ParcelBundler = require('parcel-bundler');
 
-const getWebpackConfig = require('./getWebpackConfig');
+function serveViaParcel({ app, entry, publicUrl }) {
+  const options = {
+    outDir: `./dist${publicUrl}`, // The out directory to put the build files in, defaults to dist
+    outFile: 'index.html', // The name of the outputFile
+    publicUrl, // The url to server on, defaults to dist
+    logLevel: 3, // 3 = log everything, 2 = log warnings & errors, 1 = log errors
+    hmrPort: 0, // The port the hmr socket runs on, defaults to a random free port (0 in node.js resolves to a random free port)
+  };
+
+  const middleware = (new Bundler(entry, options)).middleware();
+
+  app.use(publicUrl, (req, res, next) => {
+    // parcel bases its requests on the `req.url` option, which express
+    // helpfully(?) rewrites to exclude the matched path.
+    // We add back in the entire url so parcel knows what to do
+    req.url = req.originalUrl;
+    return middleware(req, res, next);
+  });
+}
+
 
 function injectQueryParams({ url, params, overwrite = true }) {
   const parsedUrl = new URL(url);
@@ -41,15 +60,15 @@ module.exports = class AdminUI {
 
     this.adminPath = config.adminPath;
     // TODO: Figure out how to have auth & non-auth URLs share the same path
-    this.adminAuthPath = `${config.adminPath}_auth`;
     this.graphiqlPath = `${this.adminPath}/graphiql`;
     this.apiPath = `${this.adminPath}/api`;
+    this.authPath = `${this.adminPath}/auth`;
 
     this.config = {
       ...config,
-      signinUrl: `${this.adminAuthPath}/signin`,
-      signoutUrl: `${this.adminAuthPath}/signout`,
-      sessionUrl: `${this.adminAuthPath}/session`,
+      signinUrl: `${this.authPath}/signin`,
+      signoutUrl: `${this.authPath}/signout`,
+      sessionUrl: `${this.authPath}/session`,
     };
 
     this.signin = this.signin.bind(this);
@@ -95,7 +114,8 @@ module.exports = class AdminUI {
     }
 
     const htmlResponse = () =>
-      res.redirect(req.body.redirectTo || admin.adminPath);
+      res.redirect(req.body.redirectTo || this.adminPath);
+
     return res.format({
       default: htmlResponse,
       'text/html': htmlResponse,
@@ -134,7 +154,6 @@ module.exports = class AdminUI {
   getAdminMeta() {
     return {
       withAuth: !!this.config.authStrategy,
-      adminAuthPath: this.config.adminAuthPath,
       signinUrl: this.config.signinUrl,
       signoutUrl: this.config.signoutUrl,
       sessionUrl: this.config.sessionUrl,
@@ -148,16 +167,16 @@ module.exports = class AdminUI {
 
     const app = express();
 
-    const sessionHandler = session({
-      secret: cookieSecret,
-      resave: false,
-      saveUninitialized: false,
-      name: 'keystone-admin.sid',
-    });
-
     // implement session management
-    app.use(this.adminPath, sessionHandler);
-    app.use(this.adminAuthPath, sessionHandler);
+    app.use(
+      this.adminPath,
+      session({
+        secret: cookieSecret,
+        resave: false,
+        saveUninitialized: false,
+        name: 'keystone-admin.sid',
+      })
+    );
 
     // NOTE: These are POST only. The GET versions (the UI) are handled by the
     // main server
@@ -175,13 +194,15 @@ module.exports = class AdminUI {
     );
     app.get(this.config.sessionUrl, this.session);
 
-    // NOTE: No auth check on this.adminAuthPath, that's because we rely on the
-    // UI code to only handle the signin/signout routes.
-    // THIS IS NOT SECURE! We need proper server-side handling of this, and
-    // split the signin/out pages into their own bundle so we don't leak admin
-    // data to the browser.
     const authCheck = (req, res, next) => {
-      if (!req.user) {
+      console.log('authCheck');
+      // NOTE: No auth check on this.authPath, that's because we rely on the
+      // UI code to only handle the signin/signout routes.
+      // THIS IS NOT SECURE! We need proper server-side handling of this, and
+      // split the signin/out pages into their own bundle so we don't leak admin
+      // data to the browser.
+      if (!req.originalUrl.startsWith(this.authPath) && !req.user) {
+        console.log('redirecting');
         const signinUrl = this.config.signinUrl;
         /*
          * This works, but then webpack (or react-router?) is unable to match
@@ -197,8 +218,8 @@ module.exports = class AdminUI {
       // All logged in, so move on to the next matching route
       next();
     };
-    app.use(`${this.adminPath}`, authCheck);
     app.use(`${this.adminPath}/*`, authCheck);
+    app.use(`${this.adminPath}`, authCheck);
     return app;
   }
 
@@ -221,13 +242,24 @@ module.exports = class AdminUI {
   createDevMiddleware() {
     const app = express();
 
+
+    if (this.config.authStrategy) {
+      serveViaParcel({
+        app,
+        entry: '../index.html',
+        publicUrl: '/admin/auth',
+      });
+
+    serveViaParcel({ app, entry: './client/index.html', publicUrl: '/admin' });
+
     // ensure any non-resource requests are rewritten for history api fallback
-    const nonResourceRewrite = (req, res, next) => {
-      if (/^[\w\/\-]+$/.test(req.url)) req.url = '/';
-      next();
-    };
-    app.use(this.adminPath, nonResourceRewrite);
-    app.use(this.adminAuthPath, nonResourceRewrite);
+    //app.use(this.adminPath, (req, res, next) => {
+    //  console.log('resource rewrite');
+    //  // TODO: Confirm what this is matching against. Why is it necessary to
+    //  // rewrite the url?
+    //  if (/^[\w\/\-]+$/.test(req.url)) req.url = '/';
+    //  next();
+    //});
 
     // add the webpack dev middleware
     // TODO: Replace with local server so we can add ACL / stop leaking admin
@@ -241,6 +273,7 @@ module.exports = class AdminUI {
       adminPath: this.adminPath,
       apiPath: this.apiPath,
       graphiqlPath: this.graphiqlPath,
+      title: this.keystone.config.name ? `${this.keystone.config.name} | Admin` : 'KeystoneJS',
     });
 
     const compiler = webpack(webpackConfig);
@@ -248,26 +281,49 @@ module.exports = class AdminUI {
       publicPath: webpackConfig.output.publicPath,
       stats: 'minimal',
     });
-    app.use(this.webpackMiddleware);
+
+    let authWebpackMiddleware;
 
     if (this.config.authStrategy) {
+      console.log('Setting up Auth Strategy');
       const authWebpackConfig = getWebpackConfig({
         adminMeta: {
           ...this.getAdminMeta(),
           ...this.keystone.getAdminMeta(),
         },
-        publicPath: this.adminAuthPath,
+        publicPath: this.authPath,
         adminPath: this.adminPath,
         apiPath: this.apiPath,
         graphiqlPath: this.graphiqlPath,
+        title: this.keystone.config.name ? `${this.keystone.config.name} | Authentication` : 'KeystoneJS',
       });
       const authCompiler = webpack(authWebpackConfig);
-      const authWebpackMiddleware = webpackDevMiddleware(authCompiler, {
-        publicPath: this.adminAuthPath,
+      authWebpackMiddleware = webpackDevMiddleware(authCompiler, {
+        publicPath: webpackConfig.output.publicPath,
         stats: 'minimal',
       });
-      app.use(authWebpackMiddleware);
+
+      app.use((req, res, next) => {
+        console.log('HIT authPath: ', req.originalUrl, req.url);
+        //req.url = req.originalUrl;
+        if (req.originalUrl.startsWith(this.authPath) && /^[\w\/\-]+$/.test(req.url)) req.url = '/';
+        authWebpackMiddleware(req, res, (error) => {
+          if (error) {
+            return next(error);
+          }
+          // Don't let this route fall through
+          return next();
+        });
+      });
     }
+      /*
+    app.use(this.adminPath, (req, res, next) => {
+      console.log('HIT adminPath: ', req.originalUrl, req.url);
+      //req.url = req.originalUrl;
+      if (/^[\w\/\-]+$/.test(req.url)) req.url = '/';
+      this.webpackMiddleware(req, res, next);
+    });
+    */
 
     // handle errors
     // eslint-disable-next-line no-unused-vars

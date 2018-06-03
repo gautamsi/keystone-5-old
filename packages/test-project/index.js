@@ -118,7 +118,7 @@ const authStrategy = keystone.createAuthStrategy({
 
 const admin = new AdminUI(keystone, {
   adminPath: '/admin',
-  // authStrategy, // uncomment to enable authentication on the Admin UI (NOT the GraphQL API)
+  authStrategy, // uncomment to enable authentication on the Admin UI (NOT the GraphQL API)
 });
 
 const server = new WebServer(keystone, {
@@ -159,4 +159,7 @@ async function start() {
   }
 }
 
-start();
+start().catch(error => {
+  console.error(error);
+  process.exit(1);
+});

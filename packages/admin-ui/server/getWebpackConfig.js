@@ -10,17 +10,32 @@ module.exports = function({
   adminPath,
   apiPath,
   graphiqlPath,
+  title,
 }) {
   return {
     mode,
     context: path.resolve(__dirname, '../client/'),
     devtool: mode === 'development' ? 'inline-source-map' : undefined,
     entry: './index.js',
+    // When we have 2 dev servers running (one for auth, the other for admin),
+    // they need to server assets from unique paths so we can correctly limit
+    // access.
+    // To do so, we make sure webpack is serving the assets from the sub-path.
+    // Combined with the devServer.historyApiFallback option, this allows
+    // react-router to handle the HTML routes based on the root path, and
+    // webpack to handle the asset routes correctly.
+    //output: {
+    //  path: path.join(__dirname, 'dist'),
+    //  filename: 'bundle.js',
+    //  publicPath, //: `/${publicPath.replace(/^\/*(.*?)\/*$/, '$1')}/`,
+    //},
     output: {
       filename: 'bundle.js',
       publicPath,
     },
     devServer: {
+      // 404's are forwarded on to the index.html file (ie; so react-router can
+      // handle the path and 'route' correctly in the browser)
       historyApiFallback: true,
     },
     plugins: [
@@ -33,7 +48,7 @@ module.exports = function({
         }),
       }),
       new HtmlWebpackPlugin({
-        title: 'KeystoneJS',
+        title,
         template: 'index.html',
       }),
     ],

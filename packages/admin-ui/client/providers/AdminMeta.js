@@ -1,10 +1,8 @@
-/* global KEYSTONE_ADMIN_META */
-
 import React from 'react';
 
 import List from '../classes/List';
 
-const { lists, ...srcMeta } = KEYSTONE_ADMIN_META;
+const { lists, ...srcMeta } = process.env.KEYSTONE_ADMIN_META;
 
 const listKeys = Object.keys(lists);
 const listsByKey = {};
