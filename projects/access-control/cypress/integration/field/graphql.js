@@ -7,6 +7,7 @@ const {
   getFieldName,
   stayLoggedIn,
 } = require('../util');
+const arrayToObject = require('@keystonejs/utils');
 
 const staticList = getStaticListName({
   create: true,
@@ -23,14 +24,6 @@ const imperativeList = getImperativeListName({
   delete: true,
 });
 const imperativeCollection = listNameToCollectionName(imperativeList);
-
-const identity = val => val;
-
-const arrayToObject = (items, keyedBy, mapFn = identity) =>
-  items.reduce(
-    (memo, item) => Object.assign(memo, { [item[keyedBy]]: mapFn(item) }),
-    {}
-  );
 
 describe('Access Control, Field, GraphQL', () => {
   describe('Schema', () => {
@@ -81,12 +74,11 @@ describe('Access Control, Field, GraphQL', () => {
         .then(({ data: { __schema } }) => {
           queries = arrayToObject(__schema.queryType.fields, 'name');
           mutations = arrayToObject(__schema.mutationType.fields, 'name');
-          types = arrayToObject(__schema.types, 'name', type =>
-            Object.assign({}, type, {
-              fields: arrayToObject(type.fields || [], 'name'),
-              inputFields: arrayToObject(type.inputFields || [], 'name'),
-            })
-          );
+          types = arrayToObject(__schema.types, 'name', type => ({
+            ...type,
+            fields: arrayToObject(type.fields || [], 'name'),
+            inputFields: arrayToObject(type.inputFields || [], 'name'),
+          }));
         })
     );
 

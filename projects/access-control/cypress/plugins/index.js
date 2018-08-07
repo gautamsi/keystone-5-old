@@ -34,7 +34,7 @@ module.exports = async (on, config) => {
             return reject(error);
           }
           // eslint-disable-next-line no-underscore-dangle
-          resolve(items.map(item => Object.assign({}, item, { id: item._id })));
+          resolve(items.map(item => ({ ...item, id: item._id })));
         })
       );
     },

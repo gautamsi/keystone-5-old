@@ -11,6 +11,7 @@ import {
 import { Select } from '@keystonejs/ui/src/primitives/filters';
 
 import FieldTypes from '../FIELD_TYPES';
+import { omit } from '../../node_modules/@keystonejs/utils';
 
 const getUpdateMutation = ({ list }) => {
   return gql`
@@ -82,11 +83,7 @@ class UpdateManyModal extends Component {
   getOptions = () => {
     const { list } = this.props;
     // remove the `options` key from select type fields
-    return list.fields.map(f => {
-      let field = Object.assign({}, f);
-      delete field.options;
-      return field;
-    });
+    return omit(list.fields, ['options']);
   };
   render() {
     const { isLoading, isOpen, items, list } = this.props;

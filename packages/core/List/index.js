@@ -4,6 +4,9 @@ const {
   omit,
   unique,
   intersection,
+  objMerge,
+  mapObject,
+  arrayToObj,
 } = require('@keystonejs/utils');
 
 const {
@@ -38,12 +41,6 @@ const labelToPath = str =>
     .toLowerCase();
 
 const labelToClass = str => str.replace(/\s+/g, '');
-
-const mapKeys = (obj, func) =>
-  Object.entries(obj).reduce(
-    (memo, [key, value]) => ({ ...memo, [key]: func(value, key, obj) }),
-    {}
-  );
 
 const nativeTypeMap = new Map([
   [
@@ -134,7 +131,7 @@ module.exports = class List {
       defaultAccess: this.defaultAccess.list,
     });
 
-    const sanitisedFieldsConfig = mapKeys(
+    const sanitisedFieldsConfig = mapObject(
       config.fields,
       (fieldConfig, path) => {
         return {
@@ -179,7 +176,7 @@ module.exports = class List {
       key: this.key,
       // Reduce to truthy values (functions can't be passed over the webpack
       // boundary)
-      access: mapKeys(this.access, val => !!val),
+      access: mapObject(this.access, val => !!val),
       label: this.label,
       singular: this.singular,
       plural: this.plural,
@@ -547,48 +544,32 @@ module.exports = class List {
     if (!this.access.read) {
       return {};
     }
-
-    const fieldResolvers = this.fields
-      .filter(field => !!field.access.read)
-      .reduce(
-        (resolvers, field) => ({
-          ...resolvers,
-          ...field.getGraphqlFieldResolvers(),
-        }),
-        {
-          _label_: this.config.labelResolver,
-        }
-      );
+    const fieldResolvers = {
+      _label_: this.config.labelResolver,
+      ...objMerge(
+        this.fields
+          .filter(field => !!field.access.read)
+          .map(field => field.getGraphqlFieldResolvers())
+      ),
+    };
     return { [this.key]: this.wrapFieldQueryResolversWithACL(fieldResolvers) };
   }
   getAuxiliaryTypeResolvers() {
-    return this.fields.reduce(
-      (resolvers, field) => ({
-        ...resolvers,
-        // TODO: Obey the same ACL rules based on parent type
-        ...field.getGraphqlAuxiliaryTypeResolvers(),
-      }),
-      {}
+    // TODO: Obey the same ACL rules based on parent type
+    return objMerge(
+      this.fields.map(field => field.getGraphqlAuxiliaryTypeResolvers())
     );
   }
   getAuxiliaryQueryResolvers() {
     // TODO: Obey the same ACL rules based on parent type
-    return this.fields.reduce(
-      (resolvers, field) => ({
-        ...resolvers,
-        ...field.getGraphqlAuxiliaryQueryResolvers(),
-      }),
-      {}
+    return objMerge(
+      this.fields.map(field => field.getGraphqlAuxiliaryQueryResolvers())
     );
   }
   getAuxiliaryMutationResolvers() {
     // TODO: Obey the same ACL rules based on parent type
-    return this.fields.reduce(
-      (resolvers, field) => ({
-        ...resolvers,
-        ...field.getGraphqlAuxiliaryMutationResolvers(),
-      }),
-      {}
+    return objMerge(
+      this.fields.map(field => field.getGraphqlAuxiliaryMutationResolvers())
     );
   }
 
@@ -898,19 +879,14 @@ module.exports = class List {
         }
 
         // Merge in default Values here
-        const item = this.fields.reduce((memo, field) => {
-          const defaultValue = field.getDefaultValue();
-
-          // explicit `undefined` check as `null` is a valid value
-          if (defaultValue === undefined) {
-            return memo;
-          }
-
-          return {
-            [field.path]: defaultValue,
-            ...memo,
-          };
-        }, data);
+        const item = {
+          ...data,
+          ...arrayToObj(
+            this.fields.filter(field => field.getDefaultValue() !== undefined), // explicit `undefined` check as `null` is a valid value
+            'path',
+            field.getDefaultValue()
+          ),
+        };
 
         this.throwIfAccessDeniedOnFields({
           accessType: 'create',
@@ -924,15 +900,8 @@ module.exports = class List {
         });
 
         const resolvedData = await resolveAllKeys(
-          Object.keys(data).reduce(
-            (resolvers, fieldPath) => ({
-              ...resolvers,
-              [fieldPath]: this.fieldsByPath[fieldPath].createFieldPreHook(
-                data[fieldPath],
-                fieldPath
-              ),
-            }),
-            {}
+          mapObject(data, (value, fieldPath) =>
+            this.fieldsByPath[fieldPath].createFieldPreHook(value, fieldPath)
           )
         );
 
@@ -984,16 +953,12 @@ module.exports = class List {
             });
 
             const resolvedData = await resolveAllKeys(
-              Object.keys(data).reduce(
-                (resolvers, fieldPath) => ({
-                  ...resolvers,
-                  [fieldPath]: this.fieldsByPath[fieldPath].updateFieldPreHook(
-                    data[fieldPath],
-                    fieldPath,
-                    item
-                  ),
-                }),
-                {}
+              mapObject(data, (value, fieldPath) =>
+                this.fieldsByPath[fieldPath].updateFieldPreHook(
+                  value,
+                  fieldPath,
+                  item
+                )
               )
             );
 

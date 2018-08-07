@@ -1,4 +1,4 @@
-const { resolveAllKeys } = require('@keystonejs/utils');
+const { resolveAllKeys, mapObject } = require('@keystonejs/utils');
 
 function isRelationshipField({ list, fieldKey }) {
   return !!list.config.fields[fieldKey].type.isRelationship;
@@ -7,16 +7,6 @@ function isRelationshipField({ list, fieldKey }) {
 function isManyRelationship({ list, fieldKey }) {
   const field = list.config.fields[fieldKey];
   return !!field.type.isRelationship && field.many;
-}
-
-function mapObject(input, mapFn) {
-  return Object.keys(input).reduce(
-    (memo, key) => ({
-      ...memo,
-      [key]: mapFn(input[key], key, input),
-    }),
-    {}
-  );
 }
 
 function splitObject(input, filterFn) {
@@ -290,10 +280,8 @@ const createRelationships = (lists, relationships, createdItems) => {
 };
 
 function mergeRelationships(created, relationships) {
-  return Object.keys(created).reduce((memo, listKey) => {
+  return mapObject(created, (newList, listKey) => {
     const relationshipItems = relationships[listKey];
-
-    let newList = created[listKey];
 
     if (relationshipItems) {
       newList = newList.map((item, itemIndex) => ({
@@ -301,12 +289,8 @@ function mergeRelationships(created, relationships) {
         ...relationshipItems[itemIndex],
       }));
     }
-
-    return {
-      ...memo,
-      [listKey]: newList,
-    };
-  }, {});
+    return newList;
+  });
 }
 
 module.exports = {

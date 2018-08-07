@@ -32,7 +32,7 @@ import {
   toastError,
 } from '../../util';
 
-import { resolveAllKeys } from '@keystonejs/utils';
+import { resolveAllKeys, arrayToObject } from '@keystonejs/utils';
 import isEqual from 'lodash.isequal';
 
 // This import is loaded by the @keystone/field-views-loader loader.
@@ -235,24 +235,18 @@ const ItemDetails = withRouter(
       } = this.props;
 
       resolveAllKeys(
-        fields.reduce((values, field) => {
-          const oldValue = field.getValue(initialData);
-          const newValue = field.getValue(item);
-
-          // Don't try to update anything that hasn't changed.
-          // This is particularly important for access control where a field
-          // may be `read: true, update: false`, so will appear in the item
-          // details, but is not editable, and would cause an error if a value
-          // was sent as part of the update query.
-          if (isEqual(oldValue, newValue)) {
-            return values;
-          }
-
-          return {
-            [field.path]: field.getValue(item),
-            ...values,
-          };
-        }, {})
+        // Don't try to update anything that hasn't changed.
+        // This is particularly important for access control where a field
+        // may be `read: true, update: false`, so will appear in the item
+        // details, but is not editable, and would cause an error if a value
+        // was sent as part of the update query.
+        arrayToObject(
+          fields.filter(
+            field => !isEqual(field.getValue(initialData), field.getValue(item))
+          ),
+          'path',
+          field => field.getValue(item)
+        )
       )
         .then(data => updateItem({ variables: { id: item.id, data } }))
         .then(() => {

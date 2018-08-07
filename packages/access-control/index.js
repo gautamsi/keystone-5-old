@@ -1,4 +1,4 @@
-const { getType, pick } = require('@keystonejs/utils');
+const { getType, pick, defaultObj } = require('@keystonejs/utils');
 
 const validateGranularConfigTypes = (longHandAccess, validationError) => {
   const errors = Object.entries(longHandAccess)
@@ -12,16 +12,6 @@ const validateGranularConfigTypes = (longHandAccess, validationError) => {
   if (errors.length) {
     throw new Error(errors.join('\n'));
   }
-};
-
-const shorthandToObject = (accessTypes, value) => {
-  return accessTypes.reduce(
-    (result, accessType) => ({
-      ...result,
-      [accessType]: value,
-    }),
-    {}
-  );
 };
 
 const parseGranularAccessConfig = ({
@@ -44,7 +34,7 @@ const parseGranularAccessConfig = ({
 
   // Construct an object with all keys
   return {
-    ...shorthandToObject(accessTypes, defaultAccess),
+    ...defaultObj(accessTypes, defaultAccess),
     ...longHandAccess,
   };
 };
@@ -60,7 +50,7 @@ const parseAccess = ({
   switch (type) {
     case 'Boolean':
     case 'Function':
-      return shorthandToObject(accessTypes, access);
+      return defaultObj(accessTypes, access);
 
     case 'Object':
       return parseGranularAccessConfig({

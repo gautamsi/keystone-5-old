@@ -42,9 +42,24 @@ exports.intersection = (array1, array2) =>
 
 exports.pick = (obj, keys) =>
   keys.reduce(
-    (result, key) => (key in obj ? { ...result, [key]: obj[key] } : result),
+    (acc, key) => (key in obj ? { ...acc, [key]: obj[key] } : acc),
     {}
   );
 
 exports.omit = (obj, keys) =>
   exports.pick(obj, Object.keys(obj).filter(value => !keys.includes(value)));
+
+// Gives priority to the objects which appear later in the list
+exports.objMerge = objs => objs.reduce((acc, obj) => ({ ...acc, ...obj }), {});
+
+exports.defaultObj = (keys, val) =>
+  keys.reduce((acc, key) => ({ ...acc, [key]: val }), {});
+
+exports.arrayToObject = (objs, keyedBy, mapFn = i => i) =>
+  objs.reduce((acc, obj) => ({ ...acc, [obj[keyedBy]]: mapFn(obj) }), {});
+
+exports.mapObject = (input, mapFn) =>
+  Object.entries(input).reduce(
+    (acc, [key, value]) => ({ ...acc, [key]: mapFn(value, key, input) }),
+    {}
+  );
