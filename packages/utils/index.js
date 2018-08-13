@@ -43,6 +43,8 @@ exports.resolveAllKeys = obj => {
 
 exports.unique = arr => [...new Set(arr)];
 
+exports.flatten = arr => Array.prototype.concat(...arr);
+
 exports.intersection = (array1, array2) =>
   exports.unique(array1.filter(value => array2.includes(value)));
 

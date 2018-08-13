@@ -292,6 +292,7 @@ class Relationship extends Implementation {
   }
 
   getGraphqlAuxiliaryTypes() {
+    const { ref, many } = this.config;
     // We need an input type that is specific to creating nested items when
     // creating a relationship, ie;
     //
@@ -309,19 +310,30 @@ class Relationship extends Implementation {
     // mutation createPost() {
     //   author: { id: 'abc123' }
     // }
-    return `
-      input ${this.config.ref}RelationshipInput {
+    const types = [`
+      input ${ref}RelationshipInput {
         # Provide an id to link to an existing ${
-          this.config.ref
+          ref
         }. Cannot be set if 'create' set.
         id: ID
 
         # Provide data to create a new ${
-          this.config.ref
+          ref
         }. Cannot be set if 'id' set.
-        create: ${this.config.ref}CreateInput
+        create: ${ref}CreateInput
       }
-    `;
+    `];
+
+    if (many) {
+      types.push(`
+        # Filtering options for fields referencing ${ref} in a 'many' relationship
+        input ${ref}RelationshipQueryInput {
+          ${this.getListByKey(ref).getGraphqlFilterFragment()}
+        }
+      `);
+    }
+
+    return types;
   }
   getGraphqlUpdateArgs() {
     const { many } = this.config;

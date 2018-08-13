@@ -4,6 +4,7 @@ const {
   mapKeys,
   omit,
   unique,
+  flatten,
   intersection,
 } = require('@keystonejs/utils');
 
@@ -200,9 +201,9 @@ module.exports = class List {
       .map(field => field.getGraphqlSchema())
       .join('\n          ');
 
-    const fieldTypes = this.fields
-      .map(i => i.getGraphqlAuxiliaryTypes())
-      .filter(i => i);
+    const fieldTypes = flatten(
+      this.fields.map(i => i.getGraphqlAuxiliaryTypes())
+    ).filter(i => i);
 
     const updateArgs = this.fields
       // If it's globally set to false, makes sense to never let it be updated
@@ -303,15 +304,18 @@ module.exports = class List {
     return types;
   }
 
-  getAdminGraphqlQueries() {
-    const commonArgs = `
+  getGraphqlFilterFragment() {
+    return `
+          where: ${this.itemQueryName}WhereInput
           search: String
           orderBy: String
 
           # Pagination
           first: Int
           skip: Int`;
+  }
 
+  getAdminGraphqlQueries() {
     // All the auxiliary queries the fields want to add
     const queries = this.fields
       .map(field => field.getGraphqlAuxiliaryQueries())
@@ -324,17 +328,13 @@ module.exports = class List {
       // prettier-ignore
       queries.push(`
         ${this.listQueryName}(
-          where: ${this.itemQueryName}WhereInput
-
-          ${commonArgs.trim()}
+          ${this.getGraphqlFilterFragment()}
         ): [${this.key}]
 
         ${this.itemQueryName}(where: ${this.itemQueryName}WhereUniqueInput!): ${this.key}
 
         ${this.listQueryMetaName}(
-          where: ${this.itemQueryName}WhereInput
-
-          ${commonArgs.trim()}
+          ${this.getGraphqlFilterFragment()}
         ): _QueryMeta
 
         ${this.listMetaName}: _ListMeta

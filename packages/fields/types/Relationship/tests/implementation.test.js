@@ -8,9 +8,31 @@ class MockListAdapter {
   prepareModel = () => {};
 }
 
+const mockFilterFragment = 'first: Int';
+
+const mockFilterAST = [
+  {
+    kind: 'InputValueDefinition',
+    name: {
+      value: 'first',
+    },
+    type: {
+      name: {
+        value: 'Int',
+      },
+    },
+  },
+];
+
 function createRelationship({ path, config = {} }) {
+  class MockList {
+    // The actual implementation in `@keystonejs/core/List/index.js` returns
+    // more, but we only want to test that this codepath is called
+    getGraphqlFilterFragment = () => mockFilterFragment;
+  }
+
   return new Relationship(path, config, {
-    getListByKey: () => {},
+    getListByKey: () => new MockList(),
     listKey: 'FakeList',
     listAdapter: new MockListAdapter(),
     fieldAdapterClass: MockFieldAdapter,
@@ -61,8 +83,10 @@ describe('Type Generation', () => {
       config: { many: false, ref: 'Zip' },
     });
 
+    const auxiliaryTypes = relationship.getGraphqlAuxiliaryTypes().join('\n');
+
     // We're testing the AST is as we expect it to be
-    expect(gql(relationship.getGraphqlAuxiliaryTypes())).toMatchObject({
+    expect(gql(auxiliaryTypes)).toMatchObject({
       definitions: [
         {
           kind: 'InputObjectTypeDefinition',
@@ -93,6 +117,44 @@ describe('Type Generation', () => {
               },
             },
           ],
+        },
+      ],
+    });
+  });
+
+  test('filter input not set on a non-"many" relationship', () => {
+    const path = 'foo';
+
+    const relationship = createRelationship({
+      path,
+      config: { many: false, ref: 'Zip' },
+    });
+
+    // Test that the relationship type is not added
+    const auxiliaryTypes = relationship.getGraphqlAuxiliaryTypes().join('\n');
+    const auxAST = gql(auxiliaryTypes);
+    expect(auxAST).toHaveProperty('definitions');
+    expect(auxAST.definitions).toHaveLength(1);
+  });
+
+  test('filter input set on a "many" relationship', () => {
+    const relationship = createRelationship({
+      path: 'foo',
+      config: { many: true, ref: 'Zip' },
+    });
+
+    const auxiliaryTypes = relationship.getGraphqlAuxiliaryTypes().join('\n');
+
+    // We're testing the AST is as we expect it to be
+    expect(gql(auxiliaryTypes)).toMatchObject({
+      definitions: [
+        {}, // Ignore the first one
+        {
+          kind: 'InputObjectTypeDefinition',
+          name: {
+            value: 'ZipRelationshipQueryInput',
+          },
+          fields: mockFilterAST,
         },
       ],
     });

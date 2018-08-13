@@ -49,6 +49,8 @@ class Field {
    *
    * NOTE: When a naming conflic occurs, a list's types/queries/mutations will
    * overwrite any auxiliary types defined by an individual type.
+   *
+   * @return String|Array<String>
    */
   getGraphqlAuxiliaryTypes() {}
   getGraphqlAuxiliaryTypeResolvers() {}
