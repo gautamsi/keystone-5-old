@@ -3,7 +3,6 @@ const { Keystone } = require('@keystonejs/core');
 const { Text, Password } = require('@keystonejs/fields');
 const { WebServer } = require('@keystonejs/server');
 const PasswordAuthStrategy = require('@keystonejs/core/auth/Password');
-const bodyParser = require('body-parser');
 
 const { port, staticRoute, staticPath } = require('./config');
 
@@ -45,53 +44,6 @@ const server = new WebServer(keystone, {
   apiPath: '/admin/api',
   graphiqlPath: '/admin/graphiql',
   port,
-});
-
-server.app.get('/api/session', (req, res) => {
-  const data = {
-    signedIn: !!req.session.keystoneItemId,
-    userId: req.session.keystoneItemId,
-  };
-  if (req.user) {
-    data.name = req.user.name;
-  }
-  res.json(data);
-});
-
-server.app.post('/signin', bodyParser.json(), bodyParser.urlencoded(), async (req, res, next) => {
-  // Cleanup any previous session
-  await keystone.session.destroy(req);
-
-  try {
-    const result = await keystone.auth.User.password.validate({
-      username: req.body.username,
-      password: req.body.password,
-    });
-    if (!result.success) {
-      return res.json({
-        success: false,
-      });
-    }
-    await keystone.session.create(req, result);
-    res.json({
-      success: true,
-      itemId: result.item.id,
-      token: req.sessionID,
-    });
-  } catch (e) {
-    next(e);
-  }
-});
-
-server.app.get('/signout', async (req, res, next) => {
-  try {
-    await keystone.session.destroy(req);
-    res.json({
-      success: true,
-    });
-  } catch (e) {
-    next(e);
-  }
 });
 
 server.app.get('/reset-db', (req, res) => {
