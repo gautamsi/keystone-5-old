@@ -73,7 +73,12 @@ afterAll(async () => {
   await resolveAllKeys(mapKeys(server.keystone.adapters, adapter => adapter.dropDatabase()));
   // then shut down
   await resolveAllKeys(
-    mapKeys(server.keystone.adapters, adapter => adapter.dropDatabase().then(() => adapter.close()))
+    mapKeys(server.keystone.adapters, adapter =>
+      adapter
+        .dropDatabase()
+        .then(() => adapter.close())
+        .then(console.log('Disconnected'))
+    )
   );
 });
 
