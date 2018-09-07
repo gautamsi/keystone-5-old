@@ -107,7 +107,9 @@ describe('Test CRUD for all fields', () => {
 
       afterAll(async done => {
         Object.values(keystone.adapters).forEach(async adapter => {
+          console.log('FINISHING');
           await adapter.close();
+          console.log('FINISHED');
         });
 
         done();
