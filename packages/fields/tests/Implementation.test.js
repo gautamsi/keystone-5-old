@@ -143,6 +143,7 @@ test('getAdminMeta()', () => {
     path: 'path',
     type: 'Field',
     defaultValue: 'default',
+    gqlOutputFields: [],
   });
 });
 

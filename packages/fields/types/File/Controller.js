@@ -9,8 +9,9 @@ export default class FileController extends FieldController {
     }
     return data[path];
   };
-  getQueryFragment = () => `
-    ${this.path} {
+  get gqlQueryFragments() {
+    return [
+      `${this.path} {
        id
        path
        filename
@@ -18,5 +19,7 @@ export default class FileController extends FieldController {
        encoding
        publicUrl
     }
-  `;
+  `,
+    ];
+  }
 }

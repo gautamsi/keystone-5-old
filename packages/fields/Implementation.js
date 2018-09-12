@@ -136,6 +136,7 @@ class Field {
       path: this.path,
       type: this.constructor.name,
       defaultValue: this.getDefaultValue(),
+      gqlOutputFields: this.gqlOutputFields,
     });
   }
   extendAdminMeta(meta) {

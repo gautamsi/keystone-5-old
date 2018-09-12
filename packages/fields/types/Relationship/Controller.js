@@ -6,14 +6,14 @@ export default class RelationshipController extends FieldController {
     const { ref } = this.config;
     return getListByKey(ref);
   }
-  getQueryFragment = (path = this.path) => {
-    return `
-      ${path} {
+  get gqlQueryFragments() {
+    return [
+      `${this.path} {
         id
         _label_
-      }
-    `;
-  };
+      }`,
+    ];
+  }
 
   // TODO: FIXME: This should be `set`, not `connect`
   buildRelateToOneInput = ({ id }) => ({ connect: { id } });

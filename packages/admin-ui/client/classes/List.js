@@ -16,10 +16,7 @@ const getCreateMutation = list => {
 
 const getUpdateMutation = list => {
   return gql`
-    mutation update(
-      $id: ID!,
-      $data: ${list.updateInputName})
-    {
+    mutation update($id: ID!, $data: ${list.updateInputName}) {
       ${list.updateMutationName}(id: $id, data: $data) {
         id
       }

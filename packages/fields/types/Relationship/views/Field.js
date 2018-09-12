@@ -10,7 +10,7 @@ import { colors } from '@keystonejs/ui/src/theme';
 import { pick } from '@keystonejs/utils';
 
 const getGraphqlQuery = refList => {
-  // TODO: How can we replace this with field.Controller.getQueryFragment()?
+  // TODO: How can we replace this with field.Controller.gqlQueryFragments()?
   return gql`{
     ${refList.listQueryName} {
       id

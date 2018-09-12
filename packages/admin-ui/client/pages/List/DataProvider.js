@@ -7,6 +7,7 @@ import Nav from '../../components/Nav';
 import DocTitle from '../../components/DocTitle';
 import PageError from '../../components/PageError';
 import { deconstructErrorsToDataShape } from '../../util';
+import { flatten } from '@keystonejs/utils';
 
 const getQueryArgs = ({ filters, ...args }) => {
   const queryArgs = Object.keys(args).map(
@@ -30,9 +31,9 @@ const getQuery = ({ fields, filters, list, search, orderBy, skip, first }) => {
     ${list.listQueryName}${queryArgs} {
       id
       _label_
-      ${fields.map(field => field.getQueryFragment()).join('\n')}
+      ${flatten(fields.map(field => field.gqlQueryFragments)).join('\n')}
     }
-    _${list.listQueryName}Meta${metaQueryArgs} {
+    ${list.listMetaName}${metaQueryArgs} {
       count
     }
   }`;

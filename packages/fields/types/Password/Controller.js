@@ -12,7 +12,9 @@ export default class PasswordController extends FieldController {
   };
 
   // Passwords don't expose their own value like most fields
-  getQueryFragment = () => `${this.path}_is_set`;
+  get gqlQueryFragments() {
+    return [`${this.path}_is_set`];
+  }
 
   filterTypes = [
     {

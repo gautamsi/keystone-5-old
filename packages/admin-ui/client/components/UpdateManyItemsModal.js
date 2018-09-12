@@ -9,18 +9,6 @@ import { omit } from '@keystonejs/utils';
 
 import FieldTypes from '../FIELD_TYPES';
 
-const getUpdateMutation = ({ list }) => {
-  return gql`
-    mutation delete(
-      $id: ID!,
-      $data: ${list.updateInputName})
-    {
-      ${list.updateMutationName}(id: $id, data: $data) {
-        id
-      }
-    }
-  `;
-};
 
 class UpdateManyModal extends Component {
   constructor(props) {
@@ -142,9 +130,8 @@ class UpdateManyModal extends Component {
 export default class UpdateManyModalWithMutation extends Component {
   render() {
     const { list } = this.props;
-    const updateMutation = getUpdateMutation({ list });
     return (
-      <Mutation mutation={updateMutation}>
+      <Mutation mutation={list.updateMutation}>
         {(updateItem, { loading }) => (
           <UpdateManyModal updateItem={updateItem} isLoading={loading} {...this.props} />
         )}

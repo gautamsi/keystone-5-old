@@ -22,11 +22,11 @@ describe('new Controller()', () => {
   });
 });
 
-test('getQueryFragment()', () => {
+test('gqlQueryFragments', () => {
   const controller = new FieldController(config, 'list', 'adminMeta');
 
-  const value = controller.getQueryFragment();
-  expect(value).toEqual('path');
+  const value = controller.gqlQueryFragments;
+  expect(value).toEqual(['path']);
 });
 
 describe('getValue()', () => {

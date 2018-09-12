@@ -23,7 +23,7 @@ import { AutocompleteCaptor } from '@keystonejs/ui/src/primitives/forms';
 import { colors, gridSize } from '@keystonejs/ui/src/theme';
 import { deconstructErrorsToDataShape, toastItemSuccess, toastError } from '../../util';
 
-import { resolveAllKeys, arrayToObject } from '@keystonejs/utils';
+import { resolveAllKeys, arrayToObject, flatten } from '@keystonejs/utils';
 import isEqual from 'lodash.isequal';
 
 // This import is loaded by the @keystone/field-views-loader loader.
@@ -35,7 +35,7 @@ const getItemQuery = ({ list, itemId }) => gql`
     ${list.itemQueryName}(where: { id: "${itemId}" }) {
       id
       _label_
-      ${list.fields.map(field => field.getQueryFragment()).join(' ')}
+      ${flatten(list.fields.map(field => field.gqlQueryFragments)).join(' ')}
     }
   }
 `;

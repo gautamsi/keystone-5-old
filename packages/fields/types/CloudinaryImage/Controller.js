@@ -1,7 +1,9 @@
 import FieldController from '../../Controller';
 
 export default class FileController extends FieldController {
-  getQueryFragment = () => `
+  get gqlQueryFragments() {
+    return [
+      `
     ${this.path} {
        id
        path
@@ -10,5 +12,7 @@ export default class FileController extends FieldController {
        encoding
        publicUrlTransformed(transformation: { width: "120" crop: "limit" })
     }
-  `;
+  `,
+    ];
+  }
 }
