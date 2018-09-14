@@ -9,17 +9,4 @@ export default class FileController extends FieldController {
     }
     return data[path];
   };
-  get gqlQueryFragments() {
-    return [
-      `${this.path} {
-       id
-       path
-       filename
-       mimetype
-       encoding
-       publicUrl
-    }
-  `,
-    ];
-  }
 }

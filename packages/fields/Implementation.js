@@ -137,6 +137,7 @@ class Field {
       type: this.constructor.name,
       defaultValue: this.getDefaultValue(),
       gqlOutputFields: this.gqlOutputFields,
+      gqlAuxTypes: this.gqlAuxTypes,
     });
   }
   extendAdminMeta(meta) {

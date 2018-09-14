@@ -1,3 +1,5 @@
+const { gql } = require('apollo-server-express');
+
 export default class FieldController {
   constructor(config, list, adminMeta) {
     this.config = config;
@@ -8,10 +10,22 @@ export default class FieldController {
     this.adminMeta = adminMeta;
   }
 
-  // TODO: This is a bad default; we should (somehow?) inspect the fields provided
-  // by the implementations gqlOutputFields
   get gqlQueryFragments() {
-    return [this.path];
+    const { gqlOutputFields, gqlAuxTypes } = this.adminMeta;
+    return gqlOutputFields.map(field => {
+      const [name, type] = field.split(':');
+      let subFields = '';
+      if (gqlAuxTypes.length) {
+        const gqlType = gql(gqlAuxTypes.join('\n')).definitions.reduce(
+          (acc, d) => ({ [d.name.value]: d, ...acc }),
+          {}
+        )[type.trim()];
+        if (gqlType.kind === 'ObjectTypeDefinition') {
+          subFields = `{ ${gqlType.fields.map(f => f.name.value).join('\n')} }`;
+        }
+      }
+      return `${name}${subFields}`;
+    });
   }
 
   getValue = data => data[this.config.path] || '';

@@ -11,11 +11,6 @@ export default class PasswordController extends FieldController {
     return `${this.label} ${value ? 'is set' : 'is not set'}`;
   };
 
-  // Passwords don't expose their own value like most fields
-  get gqlQueryFragments() {
-    return [`${this.path}_is_set`];
-  }
-
   filterTypes = [
     {
       type: 'is_set',
