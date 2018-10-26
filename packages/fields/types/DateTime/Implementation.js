@@ -198,6 +198,10 @@ class MongoDateTimeInterface extends MongooseFieldAdapter {
       }),
     };
   }
+
+  getMongoFieldName() {
+    return `${this.path}_utc`;
+  }
 }
 
 module.exports = {
