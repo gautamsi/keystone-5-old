@@ -162,7 +162,7 @@ async function start() {
   server.start();
   const users = await keystone.lists.User.adapter.findAll();
   if (!users.length) {
-    Object.values(keystone.adapters).forEach(async adapter => {
+    Object.values(keystone.adapters).forEach(async (adapter: any) => {
       await adapter.dropDatabase();
     });
     await keystone.createItems(initialData);
