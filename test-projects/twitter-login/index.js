@@ -77,8 +77,8 @@ keystone.createList('User', {
       },
     },
     // TODO: Create a Twitter field type to encapsulate these
-    twitterId: { type: Text },
-    twitterUsername: { type: Text },
+    // twitterId: { type: Text },
+    // twitterUsername: { type: Text },
     isAdmin: { type: Checkbox },
     company: {
       type: Select,

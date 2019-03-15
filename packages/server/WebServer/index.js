@@ -16,7 +16,11 @@ module.exports = class WebServer {
     this.config = initConfig(config);
     this.express = express;
     this.app = express();
+    this.appUseQueue = [];
+    
+  }
 
+  processAppUseQueue() {
     const { adminUI, cookieSecret, sessionStore } = this.config;
 
     if (falsey(process.env.DISABLE_LOGGING)) {
@@ -92,7 +96,7 @@ module.exports = class WebServer {
 
     // GraphQL API always exists independent of any adminUI or Session settings
     this.app.use(
-      createGraphQLMiddleware(keystone, { apiPath, graphiqlPath, apolloConfig: apollo, port })
+      createGraphQLMiddleware(this.keystone, { apiPath, graphiqlPath, apolloConfig: apollo, port })
     );
 
     if (adminUI) {
@@ -100,15 +104,26 @@ module.exports = class WebServer {
       // serve the Admin UI.
       this.app.use(adminUI.createDevMiddleware({ apiPath, graphiqlPath, port }));
     }
+
+    if(Array.isArray(this.appUseQueue)) {
+      this.appUseQueue.forEach(cb => {
+        cb(this.app);
+      })
+    }
+  }
+
+  queueAppUse(callback) {
+    this.appUseQueue.push(callback);
   }
 
   async start() {
+    await this.keystone.connect();
+    this.processAppUseQueue();
     const {
       app,
       config: { port },
     } = this;
 
-    await this.keystone.connect();
     return new Promise((resolve, reject) => {
       app.get('/', (req, res) => res.sendFile(path.resolve(__dirname, './default.html')));
 
