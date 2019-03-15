@@ -82,7 +82,6 @@ module.exports = class Keystone {
     });
     this.lists[key] = list;
     this.listsArray.push(list);
-    list.initFields();
     return list;
   }
 
@@ -94,6 +93,10 @@ module.exports = class Keystone {
       adapters,
       config: { name, dbName, adapterConnectOptions },
     } = this;
+
+    this.listsArray.forEach(list => {
+    list.initFields();      
+    })
 
     return resolveAllKeys(
       mapKeys(adapters, adapter =>

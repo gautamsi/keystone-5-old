@@ -1,4 +1,13 @@
 const keystone = require('@keystone-alpha/core');
+const {
+  File,
+  Text,
+  Checkbox,
+  Relationship,
+  Select,
+  Password,
+  CloudinaryImage,
+} = require('@keystone-alpha/fields');
 
 const { twitterAuthEnabled, port, staticRoute, staticPath } = require('./config');
 const { configureTwitterAuth } = require('./twitter');
@@ -15,12 +24,16 @@ keystone
       await keystoneApp.createItems(initialData);
       res.redirect('/admin');
     });
-
+    // another example of custom field in some lib
+    keystoneApp.lists.User.config.fields["TestCustom"] = { type: Text };
     if (twitterAuthEnabled) {
       configureTwitterAuth(keystoneApp, server);
     }
 
-    server.app.use(staticRoute, server.express.static(staticPath));
+    // server.app.use(staticRoute, server.express.static(staticPath));
+    server.queueAppUse(function(app) {
+      app.use(staticRoute, server.express.static(staticPath));
+    });
 
     await server.start();
 

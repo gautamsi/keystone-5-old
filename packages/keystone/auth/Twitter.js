@@ -58,6 +58,7 @@ class TwitterAuthStrategy {
         },
       });
     }
+    this.createAuthFields(keystone, listKey, [{ key: this.config.idField, type: Text }, { key: this.config.usernameField, type: Text }])
 
     this. passportStrategy = new PassportTwitter(
       {
@@ -103,7 +104,20 @@ class TwitterAuthStrategy {
 
     passport.use(this.passportStrategy);
 
-    this.config.server.app.use(passport.initialize());
+    // this.config.server.app.use(passport.initialize());
+    this.config.server.queueAppUse(function(app) {
+      app.use(passport.initialize());
+    });
+  }
+  createAuthFields(keystone, listKey, fields) {
+    if(!fields || !Array.isArray(fields)) {
+      return;
+    }
+    const list = keystone.getListByKey(listKey);
+    fields.forEach(field => {
+      // we can do more, default access, access passed in the constructor, access resolver passed in by field name etc.
+      list.config.fields[field.key] = { type: field.type, ...(field.options || {}) };
+    });
   }
   getList() {
     return this.keystone.lists[this.listKey];
